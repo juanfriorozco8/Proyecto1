@@ -75,11 +75,10 @@ public class Tokenizer {
      */
     private void skipDefun() {
         while (index < input.length() && !Character.isWhitespace(input.charAt(index))) { 
-            index++; // El indice avanza al siguiente carácter.
-        }
-        
+            index++; // El indice recorre la palabra (defun) hasta que encuentra un espacio.
+        }                                                                                    //De esta manera cercioramos que el indice comience la tokenización a partir del primer caracter de la expresión. 
         while (index < input.length() && Character.isWhitespace(input.charAt(index))) { 
-            index++; // El indice avanza al siguiente carácter.
+            index++; // El indice avanza al primer carácter después del espacio.
         }
     }
 }
