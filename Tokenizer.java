@@ -16,8 +16,7 @@ public class Tokenizer {
      */
     public Tokenizer(String input) {
         this.input = input;
-        this.index = 0;
-        skipDefun(); // Función que ignora la primera palabra (defun).
+        this.index = 0; // El indice se inicializa en 0.
     }
 
      /**
@@ -69,18 +68,6 @@ public class Tokenizer {
         return tokens; // Se devuelve la lista con los tokens generados.
     }
 
-    /**
-     * Metodo 3 (skipDefun): Sirve para ignorar la primera palabra de la entrada antes de tokenizar.
-     * Busca el primer espacio y ajusta el indice para saltar la palabra clave.
-     */
-    private void skipDefun() {
-        while (index < input.length() && !Character.isWhitespace(input.charAt(index))) { 
-            index++; // El indice avanza al siguiente carácter.
-        }
-        
-        while (index < input.length() && Character.isWhitespace(input.charAt(index))) { 
-            index++; // El indice avanza al siguiente carácter.
-        }
-    }
+   
 }
 
