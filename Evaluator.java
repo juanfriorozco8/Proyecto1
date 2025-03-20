@@ -62,5 +62,95 @@ public class Evaluator {
         return null;
     }
 
+    // Evaluar la operación de suma
+    private int evaluateAddition(Stack<Object> stack) {
+        int operand1 = (int) evaluateExpression(stack);
+        int operand2 = (int) evaluateExpression(stack);
+        return operand1 + operand2;
+    }
+
+    // Evaluar la operación de multiplicación
+    private int evaluateMultiplication(Stack<Object> stack) {
+        int operand1 = (int) evaluateExpression(stack);
+        int operand2 = (int) evaluateExpression(stack);
+        return operand1 * operand2;
+    }
+
+    // Evaluar la operación 'quote'
+    private Object evaluateQuote(Stack<Object> stack) {
+        return stack.pop(); // Devuelve el token tal como está (sin evaluarlo)
+    }
+
+    // Definir una nueva función
+    private Object evaluateDefun(Stack<Object> stack) {
+        String functionName = (String) stack.pop(); // Nombre de la función
+        List<String> parameters = (List<String>) stack.pop(); // Parámetros de la función
+        Stack<Object> functionBody = (Stack<Object>) stack.pop(); // Cuerpo de la función
+        environment.put(functionName, new LispFunction(functionName, parameters, functionBody)); // Guarda la función en el entorno
+        return functionName;
+    }
+
+    // Evaluar la operación 'setq' (asignación de variable)
+    private Object evaluateSetq(Stack<Object> stack) {
+        String variableName = (String) stack.pop(); // Nombre de la variable
+        Object value = evaluateExpression(stack); // Evaluar el valor a asignar
+        environment.put(variableName, value); // Asignar el valor al entorno
+        return value;
+    }
+
+    // Evaluar la operación 'atom' (verificar si un elemento es un átomo)
+    private boolean evaluateAtom(Stack<Object> stack) {
+        Object element = evaluateExpression(stack); // Evaluar el elemento
+        return !(element instanceof Stack); // Si el elemento no es una lista, es un átomo
+    }
+
+    // Evaluar la operación 'list' (crear una lista con los elementos)
+    private List<Object> evaluateList(Stack<Object> stack) {
+        List<Object> list = new ArrayList<>();
+        while (!stack.isEmpty()) {
+            list.add(evaluateExpression(stack)); // Evaluamos cada elemento y lo agregamos a la lista
+        }
+        return list; // Devolvemos la lista
+    }
+
+    // Evaluar la operación 'equal' (verificar si dos elementos son iguales)
+    private boolean evaluateEqual(Stack<Object> stack) {
+        Object operand1 = evaluateExpression(stack); // Evaluar el primer operando
+        Object operand2 = evaluateExpression(stack); // Evaluar el segundo operando
+        return operand1.equals(operand2); // Compara si los operandos son iguales
+    }
+
+    // Evaluar la operación '<' (verificar si el primer operando es menor que el segundo)
+    private boolean evaluateLessThan(Stack<Object> stack) {
+        int operand1 = (int) evaluateExpression(stack);
+        int operand2 = (int) evaluateExpression(stack);
+        return operand1 < operand2;
+    }
+
+    // Evaluar la operación '>' (verificar si el primer operando es mayor que el segundo)
+    private boolean evaluateGreaterThan(Stack<Object> stack) {
+        int operand1 = (int) evaluateExpression(stack);
+        int operand2 = (int) evaluateExpression(stack);
+        return operand1 > operand2;
+    }
+
+    // Evaluar la operación 'cond' (estructura condicional)
+    private Object evaluateCond(Stack<Object> stack) {
+        while (!stack.isEmpty()) {
+            Stack<Object> conditionPair = (Stack<Object>) stack.pop(); // Sacamos el par (condición, expresión)
+            Object condition = conditionPair.pop(); // La condición
+            Object conditionResult = evaluateExpression(new Stack<>(Collections.singletonList(condition))); // Evaluamos la condición
+
+            // Si la condición es verdadera, ejecutamos la expresión asociada
+            if (conditionResult instanceof Boolean && (boolean) conditionResult) {
+                Stack<Object> resultExpression = (Stack<Object>) conditionPair.pop();
+                return evaluateExpression(resultExpression); // Evaluamos y devolvemos el resultado
+            }
+        }
+        return null; // Si ninguna condición fue verdadera, retornamos null
+
+    }
+
 }
 
+    
