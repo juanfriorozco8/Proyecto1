@@ -1,42 +1,43 @@
 import java.util.*;
 
 /**
- * La clase LispValue implementa LispExpression y se uso para ver los datos
- * de Lisp, como números, cadenas y listas.
+ * La clase LispValue implementa LispExpression y se uso para
+ * representar los valores básicos de Lisp.
  */
 public class LispValue implements LispExpression {
-    private Object value; // Un valor que puede ser varios tipos de datos de lisp como numeros cadenas o listas
+    private Object value; // El valor de la expresión (numero, lista o string)
 
-    // constructor para tener un lispvalue de algun valor
+    // Metodo constructor para crear un lispValue con valor asignado
     public LispValue(Object value) {
         this.value = value;
     }
 
-    @Override
-    public Object evaluate() { //devuelve el valor
+    @Override // Se sobreescribe el metodo evaluate de LispExpression
+    public Object evaluate() { // Devuelve el valor almacenado en la expresión
         return value; 
     }
 
-    // Se aseegura si es una lista
+    // Comprueba si es una lista
     public boolean isList() {
         return value instanceof List;
     }
 
-    // Se asegura si es un numero
+    // Comprueba si es un número
     public boolean isNumber() {
         return value instanceof Number;
     }
 
-    // Asegura si es un simnbolo
+    // Compueba si es un símbolo
     public boolean isSymbol() {
         return value instanceof String;
     }
 
+    // Metodo get para obtener el valor dentro de la expresión
     public Object getValue() {
         return value;
     }
 
-    // para hacer el set del valor
+    // Metodo set para asignar un valor a la expresión
     public void setValue(Object value) {
         this.value = value;
     }
