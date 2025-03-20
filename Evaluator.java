@@ -62,26 +62,26 @@ public class Evaluator {
         return null;
     }
 
-    // Evaluar la operación de suma
+    // Suma
     private int evaluateAddition(Stack<Object> stack) {
         int operand1 = (int) evaluateExpression(stack);
         int operand2 = (int) evaluateExpression(stack);
         return operand1 + operand2;
     }
 
-    // Evaluar la operación de multiplicación
+    // Multiplicación
     private int evaluateMultiplication(Stack<Object> stack) {
         int operand1 = (int) evaluateExpression(stack);
         int operand2 = (int) evaluateExpression(stack);
         return operand1 * operand2;
     }
 
-    // Evaluar la operación 'quote'
+    // QUOTE
     private Object evaluateQuote(Stack<Object> stack) {
         return stack.pop(); // Devuelve el token tal como está (sin evaluarlo)
     }
 
-    // Definir una nueva función
+    // DEFUN
     private Object evaluateDefun(Stack<Object> stack) {
         String functionName = (String) stack.pop(); // Nombre de la función
         List<String> parameters = (List<String>) stack.pop(); // Parámetros de la función
@@ -90,7 +90,7 @@ public class Evaluator {
         return functionName;
     }
 
-    // Evaluar la operación 'setq' (asignación de variable)
+    // SETQ
     private Object evaluateSetq(Stack<Object> stack) {
         String variableName = (String) stack.pop(); // Nombre de la variable
         Object value = evaluateExpression(stack); // Evaluar el valor a asignar
@@ -98,13 +98,13 @@ public class Evaluator {
         return value;
     }
 
-    // Evaluar la operación 'atom' (verificar si un elemento es un átomo)
+    // ATOM
     private boolean evaluateAtom(Stack<Object> stack) {
         Object element = evaluateExpression(stack); // Evaluar el elemento
         return !(element instanceof Stack); // Si el elemento no es una lista, es un átomo
     }
 
-    // Evaluar la operación 'list' (crear una lista con los elementos)
+    // LIST
     private List<Object> evaluateList(Stack<Object> stack) {
         List<Object> list = new ArrayList<>();
         while (!stack.isEmpty()) {
@@ -113,28 +113,28 @@ public class Evaluator {
         return list; // Devolvemos la lista
     }
 
-    // Evaluar la operación 'equal' (verificar si dos elementos son iguales)
+    // EQUAL
     private boolean evaluateEqual(Stack<Object> stack) {
         Object operand1 = evaluateExpression(stack); // Evaluar el primer operando
         Object operand2 = evaluateExpression(stack); // Evaluar el segundo operando
         return operand1.equals(operand2); // Compara si los operandos son iguales
     }
 
-    // Evaluar la operación '<' (verificar si el primer operando es menor que el segundo)
+    // LessThan (<)
     private boolean evaluateLessThan(Stack<Object> stack) {
         int operand1 = (int) evaluateExpression(stack);
         int operand2 = (int) evaluateExpression(stack);
         return operand1 < operand2;
     }
 
-    // Evaluar la operación '>' (verificar si el primer operando es mayor que el segundo)
+    // GreaterThan (>)
     private boolean evaluateGreaterThan(Stack<Object> stack) {
         int operand1 = (int) evaluateExpression(stack);
         int operand2 = (int) evaluateExpression(stack);
         return operand1 > operand2;
     }
 
-    // Evaluar la operación 'cond' (estructura condicional)
+    // COND
     private Object evaluateCond(Stack<Object> stack) {
         while (!stack.isEmpty()) {
             Stack<Object> conditionPair = (Stack<Object>) stack.pop(); // Sacamos el par (condición, expresión)
