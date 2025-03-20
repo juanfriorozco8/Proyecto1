@@ -1,4 +1,4 @@
 public interface LispExpression {
-    Object evaluate (Environment entorno);
+    Object evaluate(); // Método para evaluar la expresión
     
 }
