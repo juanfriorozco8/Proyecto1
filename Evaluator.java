@@ -28,8 +28,12 @@ public class Evaluator {
             switch (operator) {
                 case "+":
                     return evaluateAddition(stack); // Operacion suma
+                case "-":
+                    return evaluateSubtraction(stack); // Operacion resta
                 case "*":
                     return evaluateMultiplication(stack); // Operacion multiplicacion
+                case "/":
+                    return evaluateDivision(stack); // Operacion division
                 case "quote":
                     return evaluateQuote(stack); // Operacion quote (no se evalua la expresion)
                 case "defun":
@@ -69,11 +73,28 @@ public class Evaluator {
         return operand1 + operand2;
     }
 
+    // Resta
+    private int evaluateSubtraction(Stack<Object> stack) {
+        int operand1 = (int) evaluateExpression(stack);
+        int operand2 = (int) evaluateExpression(stack);
+        return operand1 - operand2;
+    }
+
     // Multiplicación
     private int evaluateMultiplication(Stack<Object> stack) {
         int operand1 = (int) evaluateExpression(stack);
         int operand2 = (int) evaluateExpression(stack);
         return operand1 * operand2;
+    }
+
+    // Division (no se permite entre 0)
+    private int evaluateDivision(Stack<Object> stack) {
+        int operand1 = (int) evaluateExpression(stack);
+        int operand2 = (int) evaluateExpression(stack);
+        if (operand2 == 0) { //Si el segundo operando es 0, se lanza una excepción.
+            throw new ArithmeticException("Error: División entre cero.");
+        }
+        return operand1 / operand2;
     }
 
     // QUOTE
