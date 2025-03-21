@@ -1,117 +1,142 @@
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
 
 /**
- * La clase Environment almacena variables y funciones en un HashMap,
- * permitiendo que el intérprete recuerde valores definidos previamente.
+ * Esta clase representa el entorno donde se guardan las variables y funciones definidas en Lisp.
+ * También permite crear entornos "anidados" (como cuando se llama a una función recursiva).
  */
 public class Environment {
 
-    // Mapa donde se almacenan las variables definidas.
+    // Mapa que guarda las variables y sus valores (ej. x -> 5)
     private HashMap<String, Object> variables;
 
-    // Mapa donde se almacenan las funciones definidas.
+    // Mapa que guarda las funciones definidas (ej. cuadrado -> función)
     private HashMap<String, LispFunction> functions;
 
+    // Referencia al entorno padre (para funciones anidadas o recursividad)
+    private Environment parent;
+
     /**
-     * Metodo constructor de la clase Environment.
-     * Inicializa los HashMaps vacíos.
+     * Constructor por defecto.
+     * Inicializa los mapas de variables y funciones vacíos.
      */
     public Environment() {
         this.variables = new HashMap<>();
         this.functions = new HashMap<>();
+        this.parent = null; // Por defecto no hay entorno padre
+    }
+
+    // ENTORNO PADRE (PARA MANEJO DE RECURSIVIDAD)
+
+    /**
+     * Asigna un entorno padre. Sirve cuando se entra a una función.
+     * @param parent El entorno del cual este va a heredar.
+     */
+    public void setParent(Environment parent) {
+        this.parent = parent;
+    }
+
+    /**
+     * Devuelve el entorno padre (si lo hay).
+     */
+    public Environment getParent() {
+        return parent;
+    }
+
+    /**
+     * Verifica si el entorno tiene un padre.
+     */
+    public boolean hasParent() {
+        return parent != null;
     }
 
     // VARIABLES
+
     /**
-     * Metodo 1 (setVariable): Guarda o actualiza una variable en el entorno.
-     * 
-     * @param name Nombre de la variable (ejemplo: "y").
-     * @param value Valor de la variable (ejemplo: 5).
+     * Define o actualiza una variable.
+     * @param name Nombre de la variable.
+     * @param value Valor que se le quiere asignar.
      */
     public void setVariable(String name, Object value) {
-        variables.put(name, value); // Añade o actualiza la variable en el HashMap.
+        variables.put(name, value);
     }
 
     /**
-     * Metodo 2 (getVariable): Obtiene el valor de una variable almacenada en el entorno.
-     * 
+     * Busca el valor de una variable.
+     * Si no está en este entorno, la busca en el padre (y así sucesivamente).
      * @param name Nombre de la variable.
-     * @return El valor almacenado, o null si la variable no existe.
+     * @return Valor de la variable o null si no existe.
      */
     public Object getVariable(String name) {
-        return variables.getOrDefault(name, null); // Si la variable no existe, retorna null.
+        if (variables.containsKey(name)) {
+            return variables.get(name);
+        } else if (parent != null) {
+            return parent.getVariable(name);
+        }
+        return null;
     }
 
     /**
-     * Metodo 3 (hasVariable): Verifica si una variable existe en el entorno.
-     * 
-     * @param name Nombre de la variable.
-     * @return true si la variable se encuentra en el entorno, false si no.
+     * Verifica si la variable está definida (en este entorno o algún padre).
      */
     public boolean hasVariable(String name) {
-        return variables.containsKey(name); // Verifica si la variable está definida.
+        return variables.containsKey(name) || (parent != null && parent.hasVariable(name));
     }
 
-    // FUNCIONES
+    //FUNCIONES
+
     /**
-     * Metodo 1 (setFunction): Guarda una función en el entorno.
-     * 
-     * @param name Nombre de la función ("sum" por ejemplo).
-     * @param function Definición de la función (LispFunction).
+     * Guarda una función en el entorno.
+     * @param name Nombre de la función.
+     * @param function Objeto LispFunction que representa la función.
      */
     public void setFunction(String name, LispFunction function) {
-        functions.put(name, function); // Añade la función al HashMap.
+        functions.put(name, function);
     }
 
     /**
-     * Metodo 2 (getFunction): Obtiene una función del entorno por su nombre.
-     * 
-     * @param name Nombre de la función.
-     * @return La definición de la función (LispFunction), o null si no existe.
+     * Devuelve una función por su nombre. La busca en este entorno o en el padre.
      */
     public LispFunction getFunction(String name) {
-        return functions.getOrDefault(name, null); // Si la función no existe, retorna null.
+        if (functions.containsKey(name)) {
+            return functions.get(name);
+        } else if (parent != null) {
+            return parent.getFunction(name);
+        }
+        return null;
     }
 
     /**
-     * Metodo 3 (hasFunction): Verifica si una función existe en el entorno.
-     * 
-     * @param name Nombre de la función.
-     * @return true si la función está definida, false si no.
+     * Verifica si una función está definida en este entorno o en alguno de los padres.
      */
     public boolean hasFunction(String name) {
-        return functions.containsKey(name); // Verifica si la función está definida
+        return functions.containsKey(name) || (parent != null && parent.hasFunction(name));
     }
 
-    /**
-     * Clase LispFunction: tomamos la decision de definirla dentro de la clase Environment para mantener 
-     * la logica de almacenamiento y acceso a las variables y funciones en una misma clase, favoreciendo 
-     * la encapsulacion y cohesion del codigo.
-     */
     
+
     /**
-     * Clase interna que representa una función Lisp.
-     * Almacena el nombre, los parámetros y el cuerpo de la función.
+     * Esta clase representa una función definida en Lisp.
+     * Tiene un nombre, una lista de parámetros, y un cuerpo (una lista de expresiones).
      */
     public static class LispFunction {
-        private String name; // Nombre de la función
-        private List<String> parameters; // Parámetros de la función
-        private Stack<Object> body; // Cuerpo de la función (expresiones a evaluar)
+        private String name;
+        private List<String> parameters;
+        private List<Object> body;
 
         /**
-         * Metodo constructor para crear una función Lisp.
-         * 
-         * @param name Nombre de la función.
-         * @param parameters Parámetros de la función.
-         * @param body Cuerpo de la función (expresiones a evaluar).
+         * Crea una nueva función.
+         * @param name Nombre de la función (ej. cuadrado).
+         * @param parameters Lista de nombres de parámetros (ej. x, y).
+         * @param body Lista de expresiones que forman el cuerpo de la función.
          */
-        public LispFunction(String name, List<String> parameters, Stack<Object> body) {
+        public LispFunction(String name, List<String> parameters, List<Object> body) {
             this.name = name;
             this.parameters = parameters;
             this.body = body;
         }
 
-        // Getters para acceder a los atributos de la función, de ser necesario.
+        // Getters (accesores)
 
         public String getName() {
             return name;
@@ -121,9 +146,8 @@ public class Environment {
             return parameters;
         }
 
-        public Stack<Object> getBody() {
+        public List<Object> getBody() {
             return body;
         }
     }
 }
-

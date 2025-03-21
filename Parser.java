@@ -1,60 +1,54 @@
 import java.util.*;
 
-/**
- * La clase Parser convierte una lista de tokens en estructuras que la computadora pueda operar, usando Stack.
- */
 public class Parser {
-    private List<String> tokens; // La lista de tokens generados por el Tokenizer
-    private int index; // Indice que recorre la lista de tokens
+    private List<String> tokens; // Lista de tokens generados por el Tokenizer
+    private int index; // Índice que recorre la lista de tokens
 
     /**
-     * Metodo constructor para el Parser.
-     * @param tokens La lista de tokens generada por la clase Tokenizer.
+     * Constructor del Parser.
+     * @param tokens Lista de tokens generada por el Tokenizer.
      */
     public Parser(List<String> tokens) {
         this.tokens = tokens;
-        this.index = 0; // El indice se inicializa en 0.
+        this.index = 0; // El índice comienza en 0.
     }
 
     /**
-     * Método principal que organiza la estructura usando Stack. 
-     * Utiliza Object para poder almacenar cualquier tipo de dato.
-     * @return Una Stack que representa la expresión parseada.
+     * Método principal que organiza la estructura en una lista de objetos.
+     * @return Lista de objetos representando la expresión parseada.
      */
-    public Stack<Object> parse() {
-        Stack<Object> stack = new Stack<>(); 
-        parser(stack); // Se llama a si mismo para llenar la Stack (recursion).
-        return stack;
-    }
-
-    /**
-     * Método recursivo que llena la Stack con expresiones Lisp.
-     * @param stack Pila donde se almacenarán los elementos de la expresión como tipo Object.
-     */
-    private void parser(Stack<Object> stack) {
+    public Object parse() {
         if (index >= tokens.size()) {
-            return; // Si no se encuentran tokens, se termina la recursión.
+            throw new RuntimeException("Error: Expresión incompleta.");
         }
 
-        String token = tokens.get(index); // Se obtiene el token actual de la lista tokens.
-        index++; // Avanza al siguiente token.
+        String token = tokens.get(index);
+        index++;
 
-        if (token.equals("(")) { // Si el token es un '(', se trata de una subexpresión.
-            Stack<Object> subStack = new Stack<>(); // Se crea una nueva pila para la subexpresión.
-            while (!tokens.get(index).equals(")")) { // Mientras no se encuentre un ')' se sigue llenando la subexpresión.
-                parser(subStack); // Llamado recursivo para subexpresiones.
+        if (token.equals("(")) { 
+            List<Object> list = new ArrayList<>(); // Se crea una lista para la subexpresión
+            while (!tokens.get(index).equals(")")) { 
+                list.add(parse()); // Llamado recursivo para agregar elementos a la lista
             }
             index++; // Saltamos el ')'
-            stack.push(subStack); // Agregamos la substack a la stack principal.
-        } else if (token.equals(")")) { // Si se encuentra un ')', se lanza una excepción. Esto debido a que no puede empezar una expresion con parentesis cerrado.
-            throw new RuntimeException("Error: Parentesis en posicion incorrecta.");
-        } else {
-           
+            return list; // Devolvemos la lista completa
+        } 
+        else if (token.equals(")")) {
+            throw new RuntimeException("Error: Paréntesis en posición incorrecta.");
+        } 
+        else if (token.equals("quote")) { 
+            List<Object> quotedList = new ArrayList<>();
+            quotedList.add("quote");
+            quotedList.add(parse()); // La siguiente expresión debe tratarse como una lista sin evaluar
+            return quotedList;
+        } 
+        else {
             try {
-                stack.push(Integer.parseInt(token)); // Si el token es un número, se convierte a entero y se agrega al stack.
+                return Integer.parseInt(token); // Si es un número, lo devolvemos como entero
             } catch (NumberFormatException e) {
-                stack.push(token); // Si no es un número, se agrega el token como caracter al stack.
+                return token; // Si no es un número, lo tratamos como un símbolo
             }
         }
     }
 }
+

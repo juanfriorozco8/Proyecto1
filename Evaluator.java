@@ -1,177 +1,229 @@
 import java.util.*;
 
+/**
+ * La clase Evaluator evalúa expresiones Lisp representadas como listas de objetos.
+ * Soporta operaciones aritméticas, condicionales, definición de funciones, quote,
+ * manipulación de variables, y evaluación recursiva de funciones.
+ */ 
 public class Evaluator {
-    private HashMap<String, Object> environment; // Map que almacena funciones y variables ya definidas
-    private Stack<Object> stack; // Stack que almacena la expresión a evaluar
+    private Environment environment; // Entorno actual donde se almacenan variables y funciones
 
-    // Metodo constructor para el Evaluator
-    public Evaluator(Stack<Object> stack, HashMap<String, Object> environment) {
-        this.stack = stack;
+    /**
+     * Constructor del Evaluator.
+     * @param environment El entorno donde se definen variables y funciones.
+     */
+    public Evaluator(Environment environment) {
         this.environment = environment;
     }
 
-    // Método principal para evaluar la expresión Lisp
-    public Object evaluate() {
-        return evaluateExpression(stack);
-    }
+    /**
+     * Evalúa cualquier expresión Lisp.
+     * @param expression La expresión (lista, número, símbolo, etc.) a evaluar.
+     * @return El resultado de la evaluación.
+     */
+    public Object evaluateExpression(Object expression) {
+        if (expression instanceof List) {
+            List<Object> exprList = (List<Object>) expression;
+            if (exprList.isEmpty()) return null;
 
-    // Método recursivo para evaluar las expresiones en la pila
-    private Object evaluateExpression(Stack<Object> stack) {
-        if (stack.isEmpty()) { // Si la pila está vacía, retonamos null.
-            return null;
-        }
+            Object first = exprList.get(0);
 
-        Object token = stack.pop(); // Se obtiene el token del stack.
+            if (first instanceof String) {
+                String operator = (String) first;
 
-        if (token instanceof String) { // Si es un operador o palabra clave se evaluan las posibles operaciones dependiendo del caracter.
-            String operator = (String) token;
-            switch (operator) {
-                case "+":
-                    return evaluateAddition(stack); // Operacion suma
-                case "-":
-                    return evaluateSubtraction(stack); // Operacion resta
-                case "*":
-                    return evaluateMultiplication(stack); // Operacion multiplicacion
-                case "/":
-                    return evaluateDivision(stack); // Operacion division
-                case "quote":
-                    return evaluateQuote(stack); // Operacion quote (no se evalua la expresion)
-                case "defun":
-                    return evaluateDefun(stack); // Define una funcion
-                case "setq":
-                    return evaluateSetq(stack); // Operacion Setq: Asigna un valor a una variable
-                case "atom":
-                    return evaluateAtom(stack); // Operacion Atom: Verifica si un elemento es un atomo
-                case "list":
-                    return evaluateList(stack); // Agrupa los valores dados en una lista
-                case "equal":
-                    return evaluateEqual(stack); // Evalua si dos elementos son iguales.
-                case "<":
-                    return evaluateLessThan(stack); // Evalua si el primer elemento es menor que el segundo.
-                case ">":
-                    return evaluateGreaterThan(stack); // Evalua si el primer elemento es mayor que el segundo.
-                case "cond":
-                    return evaluateCond(stack); // Evalua una serie de condiciones. Si una es verdadera, se ejecuta la operacion asociada. De lo contrario, se evalua la siguiente condicion. Si ninguna es verdadera, se retorna nil.
-                default:
-                    throw new RuntimeException("Operador desconocido: " + operator);
+                // Evaluar según el operador o nombre de función
+                switch (operator) {
+                    case "+": return evaluateAddition(exprList);
+                    case "-": return evaluateSubtraction(exprList);
+                    case "*": return evaluateMultiplication(exprList);
+                    case "/": return evaluateDivision(exprList);
+                    case "setq": return evaluateSetq(exprList);
+                    case "atom": return evaluateAtom(exprList);
+                    case "list": return evaluateList(exprList);
+                    case "equal": return evaluateEqual(exprList);
+                    case "<": return evaluateLessThan(exprList);
+                    case ">": return evaluateGreaterThan(exprList);
+                    case "<=": return evaluateLessThanOrEqual(exprList);
+                    case ">=": return evaluateGreaterThanOrEqual(exprList);
+                    case "cond": return evaluateCond(exprList);
+                    case "quote": return evaluateQuote(exprList);
+                    case "defun": return evaluateDefun(exprList);
+                    default:
+                        if (environment.hasVariable(operator)) {
+                            return environment.getVariable(operator);
+                        }
+                        if (environment.hasFunction(operator)) {
+                            return evaluateFunctionCall(operator, exprList.subList(1, exprList.size()));
+                        }
+                        throw new RuntimeException("Operador desconocido: " + operator);
+                }
             }
-        } else if (token instanceof Integer) {
-            // Si es un número, lo retornamos tal cual
-            return token;
-        } else if (token instanceof Stack) {
-            // Si encontramos una subexpresión, la evaluamos
-            return evaluateExpression((Stack<Object>) token); // Evalua la subexpresión recursivamente
         }
 
-        return null;
-    }
-
-    // Suma
-    private int evaluateAddition(Stack<Object> stack) {
-        int operand1 = (int) evaluateExpression(stack);
-        int operand2 = (int) evaluateExpression(stack);
-        return operand1 + operand2;
-    }
-
-    // Resta
-    private int evaluateSubtraction(Stack<Object> stack) {
-        int operand1 = (int) evaluateExpression(stack);
-        int operand2 = (int) evaluateExpression(stack);
-        return operand1 - operand2;
-    }
-
-    // Multiplicación
-    private int evaluateMultiplication(Stack<Object> stack) {
-        int operand1 = (int) evaluateExpression(stack);
-        int operand2 = (int) evaluateExpression(stack);
-        return operand1 * operand2;
-    }
-
-    // Division (no se permite entre 0)
-    private int evaluateDivision(Stack<Object> stack) {
-        int operand1 = (int) evaluateExpression(stack);
-        int operand2 = (int) evaluateExpression(stack);
-        if (operand2 == 0) { //Si el segundo operando es 0, se lanza una excepción.
-            throw new ArithmeticException("Error: División entre cero.");
+        // Si es una variable suelta, la retorna desde el entorno
+        if (expression instanceof String && environment.hasVariable((String) expression)) {
+            return environment.getVariable((String) expression);
         }
-        return operand1 / operand2;
+
+        // Si no es lista ni variable, devuelve directamente (ej. número)
+        return expression;
     }
 
-    // QUOTE
-    private Object evaluateQuote(Stack<Object> stack) {
-        return stack.pop(); // Devuelve el token tal como está (sin evaluarlo)
+    /**
+     * Evalúa una llamada a una función definida con defun.
+     */
+    private Object evaluateFunctionCall(String name, List<Object> args) {
+        Environment.LispFunction function = environment.getFunction(name);
+        Environment localEnv = new Environment();
+        localEnv.setParent(environment); // Hereda entorno padre
+
+        // Asignar argumentos a parámetros
+        for (int i = 0; i < function.getParameters().size(); i++) {
+            Object argValue = evaluateExpression(args.get(i));
+            localEnv.setVariable(function.getParameters().get(i), argValue);
+        }
+
+        // Evaluar cuerpo en entorno local
+        Evaluator evaluator = new Evaluator(localEnv);
+        Object result = null;
+        for (Object expr : function.getBody()) {
+            result = evaluator.evaluateExpression(expr);
+        }
+
+        return result;
     }
 
-    // DEFUN
-    private Object evaluateDefun(Stack<Object> stack) {
-        String functionName = (String) stack.pop(); // Nombre de la función
-        List<String> parameters = (List<String>) stack.pop(); // Parámetros de la función
-        Stack<Object> functionBody = (Stack<Object>) stack.pop(); // Cuerpo de la función
-        environment.put(functionName, new LispFunction(functionName, parameters, functionBody)); // Guarda la función en el entorno
+    /**
+     * Define una función en el entorno.
+     */
+    private Object evaluateDefun(List<Object> expr) {
+        String functionName = (String) expr.get(1);
+        List<String> params = new ArrayList<>();
+        for (Object o : (List<?>) expr.get(2)) {
+            params.add((String) o);
+        }
+        List<Object> body = expr.subList(3, expr.size());
+        Environment.LispFunction fn = new Environment.LispFunction(functionName, params, body);
+        environment.setFunction(functionName, fn);
         return functionName;
     }
 
-    // SETQ
-    private Object evaluateSetq(Stack<Object> stack) {
-        String variableName = (String) stack.pop(); // Nombre de la variable
-        Object value = evaluateExpression(stack); // Evaluar el valor a asignar
-        environment.put(variableName, value); // Asignar el valor al entorno
+    /**
+     * Retorna el valor de una expresión sin evaluarla.
+     */
+    private Object evaluateQuote(List<Object> expr) {
+        return expr.get(1);
+    }
+
+    /**
+     * Evalúa una estructura condicional tipo COND.
+     */
+    private Object evaluateCond(List<Object> expr) {
+        for (int i = 1; i < expr.size(); i++) {
+            List<Object> conditionPair = (List<Object>) expr.get(i);
+            Object condition = evaluateExpression(conditionPair.get(0));
+            if ((condition instanceof Boolean && (Boolean) condition)
+                || (!(condition instanceof Boolean) && condition != null)) {
+                return evaluateExpression(conditionPair.get(1));
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Asigna un valor a una variable (SETQ).
+     */
+    private Object evaluateSetq(List<Object> expr) {
+        String name = (String) expr.get(1);
+        Object value = evaluateExpression(expr.get(2));
+        environment.setVariable(name, value);
         return value;
     }
 
-    // ATOM
-    private boolean evaluateAtom(Stack<Object> stack) {
-        Object element = evaluateExpression(stack); // Evaluar el elemento
-        return !(element instanceof Stack); // Si el elemento no es una lista, es un átomo
+    /**
+     * Devuelve true si la expresión no es una lista (es un átomo).
+     */
+    private Object evaluateAtom(List<Object> expr) {
+        Object val = evaluateExpression(expr.get(1));
+        return !(val instanceof List);
     }
 
-    // LIST
-    private List<Object> evaluateList(Stack<Object> stack) {
-        List<Object> list = new ArrayList<>();
-        while (!stack.isEmpty()) {
-            list.add(evaluateExpression(stack)); // Evaluamos cada elemento y lo agregamos a la lista
+    /**
+     * Evalúa una lista de expresiones.
+     */
+    private Object evaluateList(List<Object> expr) {
+        List<Object> result = new ArrayList<>();
+        for (int i = 1; i < expr.size(); i++) {
+            result.add(evaluateExpression(expr.get(i)));
         }
-        return list; // Devolvemos la lista
+        return result;
     }
 
-    // EQUAL
-    private boolean evaluateEqual(Stack<Object> stack) {
-        Object operand1 = evaluateExpression(stack); // Evaluar el primer operando
-        Object operand2 = evaluateExpression(stack); // Evaluar el segundo operando
-        return operand1.equals(operand2); // Compara si los operandos son iguales
+    /**
+     * Evalúa si dos expresiones son iguales.
+     */
+    private Object evaluateEqual(List<Object> expr) {
+        Object a = evaluateExpression(expr.get(1));
+        Object b = evaluateExpression(expr.get(2));
+        return a.equals(b);
     }
 
-    // LessThan (<)
-    private boolean evaluateLessThan(Stack<Object> stack) {
-        int operand1 = (int) evaluateExpression(stack);
-        int operand2 = (int) evaluateExpression(stack);
-        return operand1 < operand2;
+    // OPERACIONES DE COMPARACION
+    private Object evaluateLessThan(List<Object> expr) { // Menor que (<)
+        return getNumber(expr.get(1)) < getNumber(expr.get(2));
     }
 
-    // GreaterThan (>)
-    private boolean evaluateGreaterThan(Stack<Object> stack) {
-        int operand1 = (int) evaluateExpression(stack);
-        int operand2 = (int) evaluateExpression(stack);
-        return operand1 > operand2;
+    private Object evaluateGreaterThan(List<Object> expr) { // Mayor que (>)
+        return getNumber(expr.get(1)) > getNumber(expr.get(2));
     }
 
-    // COND
-    private Object evaluateCond(Stack<Object> stack) {
-        while (!stack.isEmpty()) {
-            Stack<Object> conditionPair = (Stack<Object>) stack.pop(); // Sacamos el par (condición, expresión)
-            Object condition = conditionPair.pop(); // La condición
-            Object conditionResult = evaluateExpression(new Stack<>(Collections.singletonList(condition))); // Evaluamos la condición
+    private Object evaluateLessThanOrEqual(List<Object> expr) { // Menor o igual que (<=)
+        return getNumber(expr.get(1)) <= getNumber(expr.get(2));
+    }
 
-            // Si la condición es verdadera, ejecutamos la expresión asociada
-            if (conditionResult instanceof Boolean && (boolean) conditionResult) {
-                Stack<Object> resultExpression = (Stack<Object>) conditionPair.pop();
-                return evaluateExpression(resultExpression); // Evaluamos y devolvemos el resultado
-            }
+    private Object evaluateGreaterThanOrEqual(List<Object> expr) { // Mayor o igual que (>=)
+        return getNumber(expr.get(1)) >= getNumber(expr.get(2));
+    }
+
+    // OPERACIONES ARITMETICAS
+    private Object evaluateAddition(List<Object> expr) { // Suma
+        return getNumber(expr.get(1)) + getNumber(expr.get(2));
+    }
+
+    private Object evaluateSubtraction(List<Object> expr) { // Resta
+        return getNumber(expr.get(1)) - getNumber(expr.get(2));
+    }
+
+    private Object evaluateMultiplication(List<Object> expr) { // Multiplicacion
+        return getNumber(expr.get(1)) * getNumber(expr.get(2));
+    }
+
+    private Object evaluateDivision(List<Object> expr) { // Division
+        int divisor = getNumber(expr.get(2));
+        if (divisor == 0) throw new ArithmeticException("No se puede dividir por 0");
+        return getNumber(expr.get(1)) / divisor;
+    }
+
+    /**
+     * Obtiene un número desde una expresión o variable.
+     * Lanza error si no puede convertirlo a entero.
+     */
+    private int getNumber(Object obj) {
+        Object val = obj;
+
+        if (val instanceof String && environment.hasVariable((String) val)) {
+            val = environment.getVariable((String) val);
+        } else if (val instanceof List) {
+            val = evaluateExpression(val);
         }
-        return null; // Si ninguna condición fue verdadera, retornamos null
 
+        if (val instanceof Integer) {
+            return (int) val;
+        }
+
+        throw new RuntimeException("Se esperaba un número, pero se obtuvo: " + val);
     }
-
 }
+
 
     
